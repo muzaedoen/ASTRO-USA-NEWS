@@ -3,7 +3,7 @@
 
 // ⚠️ PENTING: GANTI DENGAN ID SPREADSHEET ANDA SENDIRI
 const SHEET_ID = "1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo"; 
-const CSV_URL = "https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv";
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 // Mengambil data dari Google Sheets saat website di-build
 const response = await fetch(CSV_URL);
