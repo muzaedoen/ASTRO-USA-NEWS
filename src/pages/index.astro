@@ -1,7 +1,7 @@
 ---
 // src/pages/index.astro
 
-// ⚠️ GANTI DENGAN ID SPREADSHEET ANDA SENDIRI
+// ⚠️ PENTING: GANTI DENGAN ID SPREADSHEET ANDA SENDIRI
 const SHEET_ID = "1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo"; 
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
@@ -14,6 +14,7 @@ function parseCSV(csv) {
   const lines = csv.split('\n');
   if (lines.length === 0) return [];
   
+  // Ambil baris pertama sebagai nama kolom (id, tanggal, judul, konten, gambar)
   const headers = lines[0].replace(/"/g, '').split(',');
   
   return lines.slice(1).map(line => {
@@ -42,7 +43,7 @@ const semuaBerita = parseCSV(csvText);
     <header class="bg-red-600 text-white p-5 shadow-lg sticky top-0 z-50">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-black tracking-wider flex items-center gap-2">
-                🔥 BERITA VIRALbanget
+                🔥 BERITA VIRAL
             </h1>
             <span class="bg-black/30 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest">
                 Live dari Spreadsheet
@@ -55,6 +56,7 @@ const semuaBerita = parseCSV(csvText);
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {semuaBerita.map((berita) => (
                 <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col">
+                    {/* Gambar Berita */}
                     <div class="relative h-48 overflow-hidden bg-slate-200">
                         <img 
                             src={berita.gambar || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=600"} 
@@ -63,6 +65,7 @@ const semuaBerita = parseCSV(csvText);
                         />
                     </div>
                     
+                    {/* Detail Berita */}
                     <div class="p-5 flex-1 flex flex-col justify-between">
                         <div>
                             <span class="text-xs font-bold text-red-500 tracking-wide uppercase">
@@ -84,7 +87,7 @@ const semuaBerita = parseCSV(csvText);
             ))}
         </div>
 
-        {/* Jika belum ada berita */}
+        {/* Kondisi jika Spreadsheet masih kosong */}
         {semuaBerita.length === 0 && (
             <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
                 <p class="text-slate-400 font-medium">Belum ada berita. Silakan isi Google Spreadsheet Anda!</p>
