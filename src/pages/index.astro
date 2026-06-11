@@ -1,0 +1,100 @@
+---
+// src/pages/index.astro
+
+// ⚠️ GANTI DENGAN ID SPREADSHEET ANDA SENDIRI
+const SHEET_ID = "1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo"; 
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+// Mengambil data dari Google Sheets saat website di-build
+const response = await fetch(CSV_URL);
+const csvText = await response.text();
+
+// Fungsi untuk mengubah format CSV dari Google Sheets menjadi data JSON yang siap dipakai
+function parseCSV(csv) {
+  const lines = csv.split('\n');
+  if (lines.length === 0) return [];
+  
+  const headers = lines[0].replace(/"/g, '').split(',');
+  
+  return lines.slice(1).map(line => {
+    const data = line.replace(/"/g, '').split(',');
+    let obj = {};
+    headers.forEach((header, i) => {
+      obj[header.trim()] = data[i]?.trim();
+    });
+    return obj;
+  }).filter(item => item.judul); // Menyaring agar baris kosong tidak ikut terbaca
+}
+
+const semuaBerita = parseCSV(csvText);
+---
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Berita Viral Terupdate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <header class="bg-red-600 text-white p-5 shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-wider flex items-center gap-2">
+                🔥 BERITA VIRAL
+            </h1>
+            <span class="bg-black/30 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest">
+                Live dari Spreadsheet
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto my-10 px-4">
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {semuaBerita.map((berita) => (
+                <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col">
+                    <div class="relative h-48 overflow-hidden bg-slate-200">
+                        <img 
+                            src={berita.gambar || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=600"} 
+                            alt={berita.judul} 
+                            class="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        />
+                    </div>
+                    
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-red-500 tracking-wide uppercase">
+                                {berita.tanggal || "Terbaru"}
+                            </span>
+                            <h2 class="text-lg font-bold my-2 text-slate-900 line-clamp-2 hover:text-red-600">
+                                {berita.judul}
+                            </h2>
+                            <p class="text-slate-600 text-sm line-clamp-3 mb-4 leading-relaxed">
+                                {berita.konten}
+                            </p>
+                        </div>
+                        
+                        <button class="w-full text-center bg-slate-100 hover:bg-red-50 hover:text-red-600 py-2.5 rounded-xl font-medium text-sm transition-colors mt-2">
+                            Baca Selengkapnya
+                        </button>
+                    </div>
+                </article>
+            ))}
+        </div>
+
+        {/* Jika belum ada berita */}
+        {semuaBerita.length === 0 && (
+            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                <p class="text-slate-400 font-medium">Belum ada berita. Silakan isi Google Spreadsheet Anda!</p>
+            </div>
+        )}
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 text-center py-6 mt-20 text-xs border-t border-slate-800">
+        &copy; {new Date().getFullYear()} Portal Berita Viral. Diperbarui otomatis menggunakan Google Sheets.
+    </footer>
+
+</body>
+</html>
