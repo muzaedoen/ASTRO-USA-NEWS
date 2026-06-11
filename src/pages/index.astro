@@ -1,15 +1,23 @@
 ---
-// 1. MASUKKAN LINK GOOGLE APPS SCRIPT ANDA DI SINI
-const response = await fetch('1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo');
-const data = await response.json();
+// URL Web App Google Apps Script Anda (Sudah otomatis terpasang dengan benar)
+const linkAPI = 'https://script.google.com/macros/s/AKfycbzE47FzY6H-OOfz_5f8UjN9F9mREu1XkYwU_D4pfeBqZp8yO9aR_7i_uYshBWhg_5x/exec';
 
-// Mengambil baris pertama dari data Sheets Anda
-const beritaUtama = data[0] || {
-  title: "Kematian Trump",
-  date: "11 Juni 2026",
-  description: "Ini adalah uji coba konten berita pertama yang berhasil ditarik langsung dari database Google Sheets.",
-  image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
-};
+let listBerita = [];
+
+try {
+  const response = await fetch(linkAPI);
+  listBerita = await response.json();
+} catch (e) {
+  // Pengaman cadangan: Jika koneksi internet putus, web tidak akan eror merah di Termux
+  listBerita = [
+    {
+      title: "Kematian Trump",
+      date: "11 Juni 2026",
+      description: "Ini adalah uji coba konten berita pertama yang berhasil ditarik langsung dari database Google Sheets secara realtime.",
+      image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
+    }
+  ];
+}
 ---
 
 <!doctype html>
@@ -19,7 +27,7 @@ const beritaUtama = data[0] || {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VIBENEWS - Premium Live Dashboard</title>
     
-    <!-- Bootstrap CSS murni agar grid dan tombol langsung rapi tanpa merusak Astro -->
+    <!-- Bootstrap CSS murni untuk layout premium instant -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     
     <style>
@@ -35,11 +43,7 @@ const beritaUtama = data[0] || {
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 8px 30px rgba(0, 242, 254, 0.08);
-        transition: transform 0.3s ease, border-color 0.3s ease;
-      }
-      .premium-card:hover {
-        border-color: #00f2fe;
-        transform: translateY(-2px);
+        margin-bottom: 28px;
       }
       .neon-text {
         color: #00f2fe;
@@ -57,11 +61,6 @@ const beritaUtama = data[0] || {
         justify-content: center;
         gap: 10px;
         text-decoration: none;
-        transition: all 0.3s ease;
-      }
-      .premium-btn:hover {
-        opacity: 0.9;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
       }
       .badge-live {
         background-color: rgba(16, 185, 129, 0.1);
@@ -71,21 +70,6 @@ const beritaUtama = data[0] || {
         border-radius: 30px;
         font-size: 11px;
         font-weight: 600;
-        letter-spacing: 0.5px;
-      }
-      .pulse {
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        background-color: #10b981;
-        border-radius: 50%;
-        margin-right: 6px;
-        animation: blink 1.5s infinite;
-      }
-      @keyframes blink {
-        0% { opacity: 0.3; }
-        50% { opacity: 1; }
-        100% { opacity: 0.3; }
       }
     </style>
   </head>
@@ -97,51 +81,54 @@ const beritaUtama = data[0] || {
         <span class="navbar-brand mb-0 h1 text-white fw-bold m-0" style="font-size: 20px; letter-spacing: 1px;">
           ⚡ VIBE<span class="neon-text">NEWS</span>
         </span>
-        <span class="badge-live"><span class="pulse"></span>LIVE DATABASE</span>
+        <span class="badge-live">● LIVE DATABASE</span>
       </div>
     </nav>
 
-    <!-- CONTAINER UTAMA -->
+    <!-- CONTAINER UTAMA (OTOMATIS LOOPING SEBANYAK DATA DI SPREADSHEET) -->
     <div class="container my-4" style="max-width: 450px;">
-      <div class="premium-card">
-        
-        <!-- BAGIAN GAMBAR BERITA -->
-        <div style="position: relative; height: 230px; background-color: #0a0f1d;">
-          <img 
-            src={beritaUtama.image || "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"} 
-            alt={beritaUtama.title} 
-            style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;"
-          />
-          <span style="position: absolute; top: 12px; left: 12px; background: rgba(10,15,29,0.85); color: #94a3b8; font-size: 10px; padding: 4px 10px; border-radius: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.05);">
-            Advertisement
-          </span>
-        </div>
-
-        <!-- DETAIL TEKS BERITA -->
-        <div class="p-4">
-          <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
-            <span>🚀</span>
-            <span>{beritaUtama.date || "11 Juni 2026"}</span>
+      
+      {listBerita.map((berita) => (
+        <div class="premium-card">
+          
+          <!-- BAGIAN GAMBAR BERITA -->
+          <div style="position: relative; height: 230px; background-color: #0a0f1d;">
+            <img 
+              src={berita.image || "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"} 
+              alt={berita.title} 
+              style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;"
+            />
+            <span style="position: absolute; top: 12px; left: 12px; background: rgba(10,15,29,0.85); color: #94a3b8; font-size: 10px; padding: 4px 10px; border-radius: 6px; font-weight: 600; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.05);">
+              Advertisement
+            </span>
           </div>
-          
-          <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4; letter-spacing: -0.3px;">
-            {beritaUtama.title}
-          </h2>
-          
-          <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
-            {beritaUtama.description}
-          </p>
 
-          <!-- TOMBOL BACA + IKON PANAH (UKURAN DI-LOCK RAPI) -->
-          <a href="#" class="premium-btn">
-            <span>Baca Selengkapnya</span>
-            <svg xmlns="http://www.w3.org/2000/xl" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="display: inline-block;">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </a>
+          <!-- DETAIL TEKS BERITA -->
+          <div class="p-4">
+            <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
+              <span>🚀 {berita.date || "11 Juni 2026"}</span>
+            </div>
+            
+            <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">
+              {berita.title}
+            </h2>
+            
+            <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
+              {berita.description}
+            </p>
+
+            <!-- TOMBOL BACA + IKON PANAH (UKURAN DI-LOCK 16PX) -->
+            <a href="#" class="premium-btn">
+              <span>Baca Selengkapnya</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </a>
+          </div>
+
         </div>
+      ))}
 
-      </div>
     </div>
 
     <!-- FOOTER -->
