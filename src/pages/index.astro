@@ -1,26 +1,34 @@
 ---
-// 1. KEMBALI MENGGUNAKAN LINK GOOGLE APPS SCRIPT SAKTI ANDA
-const linkAPI = 'https://script.google.com/macros/s/AKfycbzdO7OdfM2le9-OHzQ95iQC3N8Kr3q3FdlZgUDGqsOPXFC05rV4Qg2qArO_hNs8DF2_/exec';
+// =========================================================================
+// PENGATURAN GOOGLE SPREADSHEET (UBAH 2 BARIS DI BAWAH INI)
+// =========================================================================
+// Masukkan ID unik Spreadsheet Anda yang ada di link url Google Sheets
+const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
+// Masukkan nama tab sheet Anda (Bawaannya biasanya 'Sheet1' atau 'Sheet 1')
+const sheetName = 'Sheet1'; 
+
+// URL Sakti Google API Resmi untuk menarik seluruh data baris secara realtime
+const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
 let listBerita = [];
 
 try {
   const response = await fetch(linkAPI);
-  listBerita = await response.json();
+  const text = await response.text();
   
-  if (!Array.isArray(listBerita)) {
-    listBerita = [listBerita]; 
-  }
+  // Membersihkan data mentah format teks Google agar dibaca menjadi List Berita oleh Astro
+  const jsonData = JSON.parse(text.substr(47).slice(0, -2));
+  const rows = jsonData.table.rows;
+  
+  listBerita = rows.map(row => ({
+    title: row.c[0] ? row.c[0].v : "Tanpa Judul",         // Kolom A: Judul
+    date: row.c[1] ? row.c[1].v : "12 Juni 2026",        // Kolom B: Tanggal
+    description: row.c[2] ? row.c[2].v : "Tanpa Isi",    // Kolom C: Deskripsi Berita
+    image: row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80" // Kolom D: Link Gambar
+  }));
 } catch (e) {
-  // Jika database Anda belum siap/koneksi putus, dia otomatis memunculkan berita cadangan ini agar web tidak kosong
-  listBerita = [
-    {
-      title: "Kematian Trump",
-      date: "11 Juni 2026",
-      description: "Ini adalah uji coba konten berita pertama yang berhasil ditarik dan ditampilkan secara instan tanpa hambatan koneksi database.",
-      image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80"
-    }
-  ];
+  // Pengaman jika koneksi internet terputus di Termux
+  listBerita = [];
 }
 ---
 
@@ -29,13 +37,13 @@ try {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VIBENEWS - Premium Dashboard</title>
+    <title>VIBENEWS - Premium Live Dashboard</title>
     
     <!-- Bootstrap CSS murni untuk layout premium instant -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     
     <style>
-      /* STYLE PREMIUM: DIJAMIN HITAM PEKAT & NEON CYAN */
+      /* STYLE PREMIUM: HITAM PEKAT & NEON CYAN */
       body {
         background-color: #0a0f1d !important;
         color: #e2e8f0 !important;
@@ -70,6 +78,9 @@ try {
         margin: 20px 0;
         min-height: 50px;
         text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
     </style>
   </head>
@@ -87,65 +98,72 @@ try {
     <!-- CONTAINER UTAMA -->
     <div class="container my-4" style="max-width: 450px;">
       
-      <!-- SLOT IKLAN ADSTERRA BANNER 1 (Atas Berita) -->
+      <!-- SLOT IKLAN BANNER ADSTERRA 1 -->
       <div class="ad-container">
-        <!-- PASTE KODE SCRIPT ADSTERRA BANNER PERTAMA ANDA DI BAWAH INI -->
-        <div id="container-iklan-1" style="color: #64748b; font-size: 12px;">[Tempat Banner Iklan Adsterra 1]</div>
+        <!-- HAPUS TAG DIV DI BAWAH INI & GANTI DENGAN SCRIPT BANNER 1 ADSTERRA ANDA -->
+        <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 1]</div>
       </div>
 
-      {listBerita.map((berita, index) => (
-        <>
-          <div class="premium-card">
-            
-            <!-- BAGIAN GAMBAR BERITA -->
-            <div style="position: relative; height: 230px; background-color: #0a0f1d;">
-              <img 
-                src={berita.image} 
-                alt={berita.title} 
-                style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;"
-              />
-            </div>
-
-            <!-- DETAIL TEKS BERITA -->
-            <div class="p-4">
-              <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
-                <span>🚀 {berita.date}</span>
+      {listBerita.length === 0 ? (
+        <div class="text-center my-5 text-muted">
+          <p>⏳ Menghubungkan langsung ke Google Spreadsheet...</p>
+          <p style="font-size: 11px; padding: 0 10px;">Pastikan ID Spreadsheet di baris ke-6 sudah benar dan setelan Google Sheets Anda sudah diatur ke "Siapa saja yang memiliki link dapat melihat".</p>
+        </div>
+      ) : (
+        listBerita.map((berita, index) => (
+          <>
+            <div class="premium-card">
+              
+              <!-- BAGIAN GAMBAR BERITA -->
+              <div style="position: relative; height: 230px; background-color: #0a0f1d;">
+                <img 
+                  src={berita.image} 
+                  alt={berita.title} 
+                  style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;"
+                />
               </div>
-              
-              <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">
-                {berita.title}
-              </h2>
-              
-              <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
-                {berita.description}
-              </p>
 
-              <!-- TOMBOL BACA + IKON PANAH -->
-              <a href="#" class="premium-btn">
-                <span>Baca Selengkapnya</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-              </a>
+              <!-- DETAIL TEKS BERITA -->
+              <div class="p-4">
+                <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
+                  <span>🚀 {berita.date}</span>
+                </div>
+                
+                <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">
+                  {berita.title}
+                </h2>
+                
+                <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">
+                  {berita.description}
+                </p>
+
+                <!-- TOMBOL BACA + IKON PANAH -->
+                <a href="#" class="premium-btn">
+                  <span>Baca Selengkapnya</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </a>
+              </div>
+
             </div>
 
-          </div>
-
-          <!-- SLOT IKLAN ADSTERRA BANNER 2 (Akan muncul tepat di bawah Berita ke-1) -->
-          {index === 0 && (
-            <div class="ad-container">
-              <!-- PASTE KODE SCRIPT ADSTERRA BANNER KEDUA ANDA DI BAWAH INI -->
-              <div id="container-iklan-2" style="color: #64748b; font-size: 12px;">[Tempat Banner Iklan Adsterra 2]</div>
-            </div>
-          )}
-        </>
-      ))}
+            <!-- SLOT IKLAN BANNER ADSTERRA 2 (Muncul di bawah Berita ke-1) -->
+            {index === 0 && (
+              <div class="ad-container">
+                <!-- HAPUS TAG DIV DI BAWAH INI & GANTI DENGAN SCRIPT BANNER 2 ADSTERRA ANDA -->
+                <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 2]</div>
+              </div>
+            )}
+          </>
+        ))
+      )}
 
     </div>
 
     <!-- FOOTER -->
     <footer class="text-center py-4" style="font-size: 11px; color: #64748b; border-top: 1px solid #131c31; background-color: #0d1527;">
-      <p class="m-0">© 2026 VibeNews Premium • Ditenagai oleh Astro & Sheets</p>
+      <p class="m-0">© 2026 VibeNews Premium • Ditenagai oleh Astro & Google Sheets</p>
     </footer>
 
   </body>
