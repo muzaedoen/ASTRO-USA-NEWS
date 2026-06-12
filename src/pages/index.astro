@@ -1,5 +1,25 @@
 ---
-// Kosongkan bagian atas karena proses fetch dipindah ke browser pengunjung
+// Mengaktifkan mode SSR agar data diambil langsung dari server Cloudflare setiap kali web dibuka
+export const prerender = false;
+
+const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
+const sheetName = 'wbu'; 
+const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+
+let newsData = [];
+let errorMessage = "";
+
+try {
+  const response = await fetch(linkAPI);
+  if (!response.ok) throw new Error("Gagal mengambil data dari Google");
+  
+  const text = await response.text();
+  // Memotong bungkus JSON dari Google Sheets API
+  const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+  newsData = jsonData.table.rows;
+} catch (e) {
+  errorMessage = "Gagal memuat berita realtime. Pastikan akses Google Sheets Anda sudah publik (Anyone with the link).";
+}
 ---
 
 <!doctype html>
@@ -7,7 +27,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>USA NEWS - Premium Live Dashboard</title>
+    <title>USA NEWS - Realtime Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     
     <style>
@@ -67,53 +87,33 @@
         <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 1]</div>
       </div>
 
-      <div id="news-container">
-        <div class="text-center my-5 text-muted" id="loading-status">
-          <p>⏳ Menghubungkan langsung ke Google Spreadsheet secara Realtime...</p>
+      {errorMessage && (
+        <div class="alert alert-danger text-center" role="alert">
+          {errorMessage}
         </div>
-      </div>
+      )}
 
-    </div>
+      {newsData.length > 0 ? (
+        newsData.map((row, index) => {
+          const title = row.c[0] ? row.c[0].v : "Tanpa Judul";
+          const date = row.c[1] ? row.c[1].v : "12 Juni 2026";
+          const description = row.c[2] ? row.c[2].v : "Tanpa Isi";
+          const image = row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80";
+          const url = row.c[4] ? row.c[4].v : "#";
 
-    <footer class="text-center py-4" style="font-size: 11px; color: #64748b; border-top: 1px solid #131c31; background-color: #0d1527;">
-      <p class="m-0">© 2026 USA News</p>
-    </footer>
-
-    <script is:inline>
-      const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
-      const sheetName = 'wbu'; 
-      const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-
-      async function loadNewsRealtime() {
-        const container = document.getElementById('news-container');
-        
-        try {
-          const response = await fetch(linkAPI);
-          const text = await response.text();
-          const jsonData = JSON.parse(text.substr(47).slice(0, -2));
-          const rows = jsonData.table.rows;
-          
-          let htmlContent = '';
-          
-          rows.forEach((row, index) => {
-            const title = row.c[0] ? row.c[0].v : "Tanpa Judul";
-            const date = row.c[1] ? row.c[1].v : "12 Juni 2026";
-            const description = row.c[2] ? row.c[2].v : "Tanpa Isi";
-            const image = row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80";
-            const url = row.c[4] ? row.c[4].v : "#";
-
-            htmlContent += `
+          return (
+            <>
               <div class="premium-card">
                 <div style="position: relative; height: 230px; background-color: #0a0f1d;">
-                  <img src="${image}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;" />
+                  <img src={image} alt={title} style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;" />
                 </div>
                 <div class="p-4">
                   <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
-                    <span>🚀 ${date}</span>
+                    <span>🚀 {date}</span>
                   </div>
-                  <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">${title}</h2>
-                  <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">${description}</p>
-                  <a href="${url}" target="_blank" rel="noopener noreferrer" class="premium-btn">
+                  <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">{title}</h2>
+                  <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">{description}</p>
+                  <a href={url} target="_blank" rel="noopener noreferrer" class="premium-btn">
                     <span>Baca Selengkapnya</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -121,26 +121,26 @@
                   </a>
                 </div>
               </div>
-            `;
 
-            // Menyisipkan Slot Iklan Banner Ke-2 di bawah berita pertama
-            if (index === 0) {
-              htmlContent += `
+              {/* Menyisipkan Slot Iklan Banner Ke-2 di bawah berita pertama */}
+              {index === 0 && (
                 <div class="ad-container">
                   <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 2]</div>
                 </div>
-              `;
-            }
-          });
-          
-          container.innerHTML = htmlContent;
-        } catch (e) {
-          container.innerHTML = '<p class="text-center text-danger">Gagal memuat berita realtime. Silakan periksa koneksi Anda.</p>';
-        }
-      }
+              )}
+            </>
+          );
+        })
+      ) : (
+        !errorMessage && (
+          <p class="text-center text-muted">Tidak ada data berita tersedia.</p>
+        )
+      )}
 
-      // Jalankan fungsi otomatis saat halaman terbuka
-      loadNewsRealtime();
-    </script>
+    </div>
+
+    <footer class="text-center py-4" style="font-size: 11px; color: #64748b; border-top: 1px solid #131c31; background-color: #0d1527;">
+      <p class="m-0">© 2026 USA News</p>
+    </footer>
   </body>
 </html>
