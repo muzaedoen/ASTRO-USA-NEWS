@@ -1,25 +1,6 @@
 ---
-// Mengaktifkan mode SSR agar data diambil langsung dari server Cloudflare setiap kali web dibuka
-export const prerender = false;
-
-const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
-const sheetName = 'wbu'; 
-const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-
-let newsData = [];
-let errorMessage = "";
-
-try {
-  const response = await fetch(linkAPI);
-  if (!response.ok) throw new Error("Gagal mengambil data dari Google");
-  
-  const text = await response.text();
-  // Memotong bungkus JSON dari Google Sheets API
-  const jsonData = JSON.parse(text.substring(47).slice(0, -2));
-  newsData = jsonData.table.rows;
-} catch (e) {
-  errorMessage = "Gagal memuat berita realtime. Pastikan akses Google Sheets Anda sudah publik (Anyone with the link).";
-}
+// Kita kembalikan ke mode statis agar build Cloudflare sukses 100%
+export const prerender = true;
 ---
 
 <!doctype html>
@@ -87,60 +68,77 @@ try {
         <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 1]</div>
       </div>
 
-      {errorMessage && (
-        <div class="alert alert-danger text-center" role="alert">
-          {errorMessage}
+      <div id="news-list">
+        <div class="text-center my-5 text-muted" id="loading-spinner">
+          <p>⏳ Memuat berita terbaru langsung dari spreadsheet...</p>
         </div>
-      )}
-
-      {newsData.length > 0 ? (
-        newsData.map((row, index) => {
-          const title = row.c[0] ? row.c[0].v : "Tanpa Judul";
-          const date = row.c[1] ? row.c[1].v : "12 Juni 2026";
-          const description = row.c[2] ? row.c[2].v : "Tanpa Isi";
-          const image = row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80";
-          const url = row.c[4] ? row.c[4].v : "#";
-
-          return (
-            <>
-              <div class="premium-card">
-                <div style="position: relative; height: 230px; background-color: #0a0f1d;">
-                  <img src={image} alt={title} style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;" />
-                </div>
-                <div class="p-4">
-                  <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
-                    <span>🚀 {date}</span>
-                  </div>
-                  <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">{title}</h2>
-                  <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">{description}</p>
-                  <a href={url} target="_blank" rel="noopener noreferrer" class="premium-btn">
-                    <span>Baca Selengkapnya</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-
-              {/* Menyisipkan Slot Iklan Banner Ke-2 di bawah berita pertama */}
-              {index === 0 && (
-                <div class="ad-container">
-                  <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 2]</div>
-                </div>
-              )}
-            </>
-          );
-        })
-      ) : (
-        !errorMessage && (
-          <p class="text-center text-muted">Tidak ada data berita tersedia.</p>
-        )
-      )}
+      </div>
 
     </div>
 
     <footer class="text-center py-4" style="font-size: 11px; color: #64748b; border-top: 1px solid #131c31; background-color: #0d1527;">
       <p class="m-0">© 2026 USA News</p>
     </footer>
+
+    <script is:inline>
+      const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
+      const sheetName = 'wbu'; 
+      const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+
+      async function fetchSheetsLive() {
+        const targetContainer = document.getElementById('news-list');
+        try {
+          const res = await fetch(linkAPI);
+          const rawText = await res.text();
+          
+          // Parsing struktur data JSON gviz dari Google Sheets
+          const cleanJson = JSON.parse(rawText.substring(47).slice(0, -2));
+          const rows = cleanJson.table.rows;
+          
+          let cardsHtml = '';
+          
+          rows.forEach((row, index) => {
+            const title = row.c[0] ? row.c[0].v : "Untitled";
+            const date = row.c[1] ? row.c[1].v : "12 Juni 2026";
+            const desc = row.c[2] ? row.c[2].v : "No Description";
+            const img = row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80";
+            const destinationUrl = row.c[4] ? row.c[4].v : "#";
+
+            cardsHtml += `
+              <div class="premium-card">
+                <div style="position: relative; height: 230px; background-color: #0a0f1d;">
+                  <img src="${img}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.9;" />
+                </div>
+                <div class="p-4">
+                  <div class="mb-2 d-flex align-items-center" style="font-size: 13px; color: #94a3b8; gap: 6px;">
+                    <span>🚀 ${date}</span>
+                  </div>
+                  <h2 class="h4 text-white fw-bold mb-3" style="line-height: 1.4;">${title}</h2>
+                  <p style="font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px;">${desc}</p>
+                  <a href="${destinationUrl}" target="_blank" rel="noopener noreferrer" class="premium-btn">
+                    <span>Baca Selengkapnya</span>
+                  </a>
+                </div>
+              </div>
+            `;
+
+            if (index === 0) {
+              cardsHtml += `
+                <div class="ad-container">
+                  <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 2]</div>
+                </div>
+              `;
+            }
+          });
+
+          targetContainer.innerHTML = cardsHtml;
+        } catch (err) {
+          targetContainer.innerHTML = '<p class="text-center text-danger">Gagal memuat berita. Pastikan setelan Google Sheets sudah "Anyone with the link".</p>';
+        }
+      }
+
+      // Jalankan fungsi setelah browser selesai memuat dokumen HTML
+      window.addEventListener('DOMContentLoaded', fetchSheetsLive);
+    </script>
   </body>
 </html>
