@@ -1,13 +1,10 @@
 ---
 // =========================================================================
-// PENGATURAN GOOGLE SPREADSHEET (UBAH 2 BARIS DI BAWAH INI)
+// PENGATURAN GOOGLE SPREADSHEET
 // =========================================================================
-// Masukkan ID unik Spreadsheet Anda yang ada di link url Google Sheets
 const sheetId = '1ympvFoFimGJo7mzfrVVefHvl0cCM7TJs_TUf285ajEo'; 
-// Masukkan nama tab sheet Anda (Bawaannya biasanya 'Sheet1' atau 'Sheet 1')
 const sheetName = 'wbu'; 
 
-// URL Sakti Google API Resmi untuk menarik seluruh data baris secara realtime
 const linkAPI = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
 let listBerita = [];
@@ -16,7 +13,6 @@ try {
   const response = await fetch(linkAPI);
   const text = await response.text();
   
-  // Membersihkan data mentah format teks Google agar dibaca menjadi List Berita oleh Astro
   const jsonData = JSON.parse(text.substr(47).slice(0, -2));
   const rows = jsonData.table.rows;
   
@@ -24,10 +20,10 @@ try {
     title: row.c[0] ? row.c[0].v : "Tanpa Judul",         // Kolom A: Judul
     date: row.c[1] ? row.c[1].v : "12 Juni 2026",        // Kolom B: Tanggal
     description: row.c[2] ? row.c[2].v : "Tanpa Isi",    // Kolom C: Deskripsi Berita
-    image: row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80" // Kolom D: Link Gambar
+    image: row.c[3] ? row.c[3].v : "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80", // Kolom D: Link Gambar
+    url: row.c[4] ? row.c[4].v : "#"                      // Kolom E: Link Tujuan Artikel (PILIHAN TERBAIK)
   }));
 } catch (e) {
-  // Pengaman jika koneksi internet terputus di Termux
   listBerita = [];
 }
 ---
@@ -39,11 +35,9 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>USA NEWS - Premium Live Dashboard</title>
     
-    <!-- Bootstrap CSS murni untuk layout premium instant -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     
     <style>
-      /* STYLE PREMIUM: HITAM PEKAT & NEON CYAN */
       body {
         background-color: #0a0f1d !important;
         color: #e2e8f0 !important;
@@ -90,7 +84,7 @@ try {
     <nav class="navbar border-bottom py-3" style="background-color: #0d1527; border-color: #1e293b !important;">
       <div class="container justify-content-center" style="max-width: 450px;">
         <span class="navbar-brand mb-0 h1 text-white fw-bold m-0" style="font-size: 20px; letter-spacing: 1px;">
-          ⚡ USA<span class="neon-text">NEWS</span>
+          ⚡ VIBE<span class="neon-text">NEWS</span>
         </span>
       </div>
     </nav>
@@ -100,14 +94,12 @@ try {
       
       <!-- SLOT IKLAN BANNER ADSTERRA 1 -->
       <div class="ad-container">
-        <!-- HAPUS TAG DIV DI BAWAH INI & GANTI DENGAN SCRIPT BANNER 1 ADSTERRA ANDA -->
         <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 1]</div>
       </div>
 
       {listBerita.length === 0 ? (
         <div class="text-center my-5 text-muted">
           <p>⏳ Menghubungkan langsung ke Google Spreadsheet...</p>
-          <p style="font-size: 11px; padding: 0 10px;">Pastikan ID Spreadsheet di baris ke-6 sudah benar dan setelan Google Sheets Anda sudah diatur ke "Siapa saja yang memiliki link dapat melihat".</p>
         </div>
       ) : (
         listBerita.map((berita, index) => (
@@ -137,8 +129,8 @@ try {
                   {berita.description}
                 </p>
 
-                <!-- TOMBOL BACA + IKON PANAH -->
-                <a href="#" class="premium-btn">
+                <!-- TOMBOL BACA (Sudah diperbaiki ke tautan asli & otomatis buka tab baru) -->
+                <a href={berita.url} target="_blank" rel="noopener noreferrer" class="premium-btn">
                   <span>Baca Selengkapnya</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -148,10 +140,9 @@ try {
 
             </div>
 
-            <!-- SLOT IKLAN BANNER ADSTERRA 2 (Muncul di bawah Berita ke-1) -->
+            <!-- SLOT IKLAN BANNER ADSTERRA 2 -->
             {index === 0 && (
               <div class="ad-container">
-                <!-- HAPUS TAG DIV DI BAWAH INI & GANTI DENGAN SCRIPT BANNER 2 ADSTERRA ANDA -->
                 <div style="color: #64748b; font-size: 12px; border: 1px dashed #1e293b; padding: 10px; width: 100%;">[Iklan Adsterra Banner 2]</div>
               </div>
             )}
