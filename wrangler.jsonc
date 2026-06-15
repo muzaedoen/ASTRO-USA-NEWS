@@ -1,7 +1,17 @@
 {
   "name": "usanews",
   "compatibility_date": "2026-06-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "./dist"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "db_usanews",
+      "database_id": "1a14bae9-5d63-4cea-bc8a-673c8a2571b3"
+    }
+  ]
 }
