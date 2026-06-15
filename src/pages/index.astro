@@ -1,12 +1,11 @@
 ---
-// 1. Ambil koneksi database D1 yang benar dari Cloudflare Workers
+// 1. Ambil koneksi database D1 dari Cloudflare
 const db = Astro.locals.env?.DB;
 
 let namaWeb = "⚡ VIBENEWS";
 let scriptIklan = "";
 let daftarBerita = [];
 
-// 2. Ambil data dari database jika koneksi DB tersedia
 if (db) {
   try {
     // Ambil Konfigurasi Nama Web & Iklan
@@ -19,7 +18,7 @@ if (db) {
     const metaIklan = configs.find(c => c.kunci === 'script_iklan');
     if (metaIklan) scriptIklan = metaIklan.nilai;
 
-    // Ambil Daftar Berita Terbaru (diurutkan dari yang paling baru dimasukkan)
+    // Ambil Daftar Berita Terbaru
     const beritaData = await db.prepare("SELECT * FROM berita ORDER BY id DESC").all();
     daftarBerita = beritaData.results || [];
   } catch (err) {
@@ -27,3 +26,67 @@ if (db) {
   }
 }
 ---
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{namaWeb}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card-img-top { height: 200px; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-warning" href="/">{namaWeb}</a>
+            <a href="/admin" class="btn btn-outline-warning btn-sm">Admin Panel</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {scriptIklan && (
+            <div class="row mb-4">
+                <div class="col-12 text-center" set:html={scriptIklan}></div>
+            </div>
+        )}
+
+        <div class="row">
+            {daftarBerita.length === 0 ? (
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-info d-inline-block">
+                        Database terkoneksi! Belum ada berita yang dipublish atau tabel kosong.
+                    </div>
+                </div>
+            ) : (
+                daftarBerita.map((item) => (
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            {item.url_gambar && (
+                                <img src={item.url_gambar} class="card-img-top" alt={item.judul} />
+                            )}
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title fw-bold">{item.judul}</h5>
+                                <p class="card-text text-muted small">{item.tanggal}</p>
+                                <p class="card-text flex-grow-1">{item.deskripsi}</p>
+                                <a href={item.url_tujuan} target="_blank" class="btn btn-primary mt-auto">
+                                    Baca Selengkapnya
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <p class="m-0">&copy; 2026 {namaWeb}. All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
