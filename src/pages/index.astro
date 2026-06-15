@@ -18,7 +18,8 @@ if (db) {
     // 2. Fitur Kejutan: Hitung & Filter Pengunjung Riil (Anti-Bot)
     const userAgent = Astro.request.headers.get('user-agent') || '';
     const ipAddress = Astro.request.headers.get('cf-connecting-ip') || '127.0.0.1';
-    
+
+
     // Filter bot populer (Google, Bing, Yahoo, Uptime, dll)
     const isBot = /bot|googlebot|crawler|spider|robot|crawling|slurp|bingbot/i.test(userAgent);
     
