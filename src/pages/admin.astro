@@ -1,0 +1,185 @@
+---
+// Mengambil koneksi database D1 Cloudflare
+const db = Astro.locals.runtime?.env?.DB;
+
+let pesanSukses = "";
+let namaWeb = "⚡ VIBENEWS";
+let scriptIklan = "";
+let totalPengunjung = 0;
+
+if (!db) {
+  return Astro.redirect('/?error=no_db_connection');
+}
+
+// 1. PROSES FORM: Jika Admin menekan tombol simpan/tambah data
+if (Astro.request.method === "POST") {
+  try {
+    const formData = await Astro.request.formData();
+    const aksi = formData.get("aksi");
+
+    // Aksi A: Update Konfigurasi Nama Tema & Script Iklan
+    if (aksi === "update_konfigurasi") {
+      const inputNamaWeb = formData.get("nama_web")?.toString() || "⚡ VIBENEWS";
+      const inputScriptIklan = formData.get("script_iklan")?.toString() || "";
+
+      await db.prepare("UPDATE konfigurasi SET nilai = ? WHERE kunci = 'nama_web'").bind(inputNamaWeb).run();
+      await db.prepare("UPDATE konfigurasi SET nilai = ? WHERE kunci = 'script_iklan'").bind(inputScriptIklan).run();
+      
+      pesanSukses = "Konfigurasi tema dan kode iklan berhasil diperbarui!";
+    }
+
+    // Aksi B: Tambah Postingan Berita Baru
+    if (aksi === "tambah_berita") {
+      const judul = formData.get("judul")?.toString() || "";
+      const tanggal = formData.get("tanggal")?.toString() || "";
+      const deskripsi = formData.get("deskripsi")?.toString() || "";
+      const gambar = formData.get("gambar")?.toString() || "";
+      const url = formData.get("url")?.toString() || "";
+
+      if (judul && tanggal) {
+        await db.prepare("INSERT INTO berita (judul, tanggal, deskripsi, gambar, url) VALUES (?, ?, ?, ?, ?)")
+          .bind(judul, tanggal, deskripsi, gambar, url)
+          .run();
+        pesanSukses = "Berita baru berhasil ditambahkan ke SQL Database!";
+      }
+    }
+  } catch (err) {
+    console.error("Gagal memproses data form:", err);
+  }
+}
+
+// 2. AMBIL DATA UNTUK TAMPILAN DASHBOARD
+try {
+  // Ambil data konfigurasi terkini
+  const configRes = await db.prepare("SELECT * FROM konfigurasi").all();
+  configRes.results.forEach((row) => {
+    if (row.kunci === 'nama_web') namaWeb = row.nilai;
+    if (row.kunci === 'script_iklan') scriptIklan = row.nilai;
+  });
+
+  // Hitung total pengunjung riil (Manusia asli hasil filter anti-bot)
+  const statsRes = await db.prepare("SELECT COUNT(id) as total FROM statistik_pengunjung").first();
+  totalPengunjung = statsRes ? (statsRes.total as number) : 0;
+} catch (err) {
+  console.error("Gagal mengambil data untuk dashboard admin:", err);
+}
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Kontrol Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+      body {
+        background-color: #060b13 !important;
+        color: #e2e8f0 !important;
+        font-family: 'Segoe UI', sans-serif;
+      }
+      .admin-card {
+        background-color: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      .stats-box {
+        background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+        border: 1px solid #4c1d95;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+      }
+      .btn-primary-custom {
+        background: linear-gradient(135deg, #00f2fe 0%, #0072ff 100%);
+        border: none;
+        color: #0a0f1d;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+
+    <nav class="navbar navbar-dark border-bottom py-3" style="background-color: #0b1329; border-color: #1e293b !important;">
+      <div class="container" style="max-width: 700px;">
+        <span class="navbar-brand mb-0 h1 fw-bold text-white">⚙️ MENU KENDALI ADMIN</span>
+        <a href="/" class="btn btn-sm btn-outline-secondary" target="_blank">Lihat Web ↗</a>
+      </div>
+    </nav>
+
+    <div class="container my-4" style="max-width: 700px;">
+      
+      {pesanSukses && (
+        <div class="alert alert-success border-0 text-center fw-bold" role="alert" style="background-color: #064e3b; color: #34d399;">
+          {pesanSukses}
+        </div>
+      )}
+
+      <!-- 1. BOX STATISTIK PENGUNJUNG RIIL (ANTI-BOT) -->
+      <div class="stats-box mb-4">
+        <h3 class="h6 text-uppercase tracking-wider text-muted m-0">👥 TOTAL PENGUNJUNG MANUSIA (RIIL)</h3>
+        <p class="display-4 fw-bold text-white m-0 my-2" style="text-shadow: 0 0 15px rgba(0,242,254,0.3);">{totalPengunjung}</p>
+        <small class="text-secondary">Sistem menyaring & mengabaikan Google Bot, Crawler, dan Spam Robot otomatis.</small>
+      </div>
+
+      <!-- 2. FORM PENGATURAN TEMA & KODE IKLAN -->
+      <div class="admin-card">
+        <h4 class="h5 fw-bold text-info mb-3">🎨 Pengaturan Tema & Iklan Javascript</h4>
+        <form method="POST">
+          <input type="hidden" name="aksi" value="update_konfigurasi" />
+          
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">NAMA TEMA / JUDUL WEBSITE</label>
+            <input type="text" name="nama_web" class="form-control bg-dark border-secondary text-white" value={namaWeb} required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">KOTAK TEMPEL KODE JAVASCRIPT (ADSTERRA / ANALYTICS)</label>
+            <textarea name="script_iklan" rows="4" class="form-control bg-dark border-secondary text-white font-monospace" placeholder="Tempel tag <script> iklan Anda di sini...">{scriptIklan}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary-custom w-100 py-2">Simpan Perubahan Tema & Iklan</button>
+        </form>
+      </div>
+
+      <!-- 3. FORM TAMBAH POSTINGAN BERITA -->
+      <div class="admin-card">
+        <h4 class="h5 fw-bold text-success mb-3">✍️ Tambah Artikel Berita Baru</h4>
+        <form method="POST">
+          <input type="hidden" name="aksi" value="tambah_berita" />
+          
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label class="form-label text-secondary small fw-bold">JUDUL BERITA</label>
+              <input type="text" name="judul" class="form-control bg-dark border-secondary text-white" required />
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label text-secondary small fw-bold">TANGGAL RILIS</label>
+              <input type="text" name="tanggal" class="form-control bg-dark border-secondary text-white" placeholder="Contoh: 15 Juni 2026" required />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">DESKRIPSI / RINGKASAN BERITA</label>
+            <textarea name="deskripsi" rows="3" class="form-control bg-dark border-secondary text-white"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">URL TAUTAN GAMBAR BERITA (URL IMAGE)</label>
+            <input type="url" name="gambar" class="form-control bg-dark border-secondary text-white" placeholder="https://domain.com/gambar.jpg" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">URL TUJUAN BACA SELENGKAPNYA (OUTBOUND LINK)</label>
+            <input type="url" name="url" class="form-control bg-dark border-secondary text-white" placeholder="https://tujuan-link-berita.com" />
+          </div>
+
+          <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Publish Berita Baru</button>
+        </form>
+      </div>
+
+    </div>
+  </body>
+</html>
